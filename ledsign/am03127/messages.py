@@ -38,8 +38,7 @@ class SetIDMessage(RawMessage):
 	
 	def __init__(self, id):
 		self.format_data = {
-			'id': id,
-			'checksum': 0
+			'id': id
 		}
 	
 	def set_id(self, id):

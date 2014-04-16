@@ -118,7 +118,7 @@ class LEDSign(object):
 		"""
 		
 		response = self.comm.send_command(data)
-		print repr(response)
+		# print repr(response)
 		
 		if response == expected_response:
 			success = True
@@ -133,7 +133,7 @@ class LEDSign(object):
 		"""
 		
 		message.set_id(self.id)
-		print message.render()
+		# print message.render()
 		
 		if isinstance(message, SetIDMessage):
 			expected_response = "%02X" % message.format_data['id']

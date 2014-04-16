@@ -2,11 +2,11 @@
 # See the LICENSE file for the full license.
 
 name = "pyLEDSign"
-version = "2.0.0"
+version = "2.0.1"
 description = "A LED message board library for Python"
 license = "AGPLv3"
 author = "Julian Metzler"
 author_email = "contact@mezgrman.de"
-requires = []
+requires = ['bbcode']
 url = "https://github.com/Mezgrman/pyLEDSign"
 keywords = "led sign message board effect library wrapper serial scrolling text"
