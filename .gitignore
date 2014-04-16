@@ -1,0 +1,4 @@
+*.pyc
+pyLEDSign.egg-info/
+build/
+dist/

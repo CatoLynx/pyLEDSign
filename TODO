@@ -1,0 +1,15 @@
+To-Do list
+==========
+
+AM03127
+|- Implement graphics support
+|  |- Graphic parser for image files
+|  |- Graphic parser for text files
+| 
+|- Implement special character support
+|  |- Special character parser for image files
+|  |- Special character parser for text files
+|
+|- Maybe the same parsers for graphics and special characters?
+|
+|- Improve blocking write
