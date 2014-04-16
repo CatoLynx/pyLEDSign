@@ -41,6 +41,18 @@ class InteractiveShell(cmd.Cmd):
 			content = content
 		)
 		print "Page sent!" if success else "Failed to send page"
+	
+	def do_p(self, command):
+		# p = page a
+		return self.do_page("A %s" % command)
+	
+	def do_pn(self, command):
+		# pn = page a, narrow
+		return self.do_page("A [font=narrow]%s" % command)
+	
+	def do_pb(self, command):
+		# pb = page a, bold
+		return self.do_page("A [font=bold]%s" % command)
 
 def main():
 	parser = argparse.ArgumentParser(description = "Interactive AM03127 LED sign shell")
