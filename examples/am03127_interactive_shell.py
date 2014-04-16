@@ -9,6 +9,7 @@ EXAMPLE SCRIPT: Interactive shell for AM03127-based LED signs
 import argparse
 import cmd
 import ledsign
+import traceback
 
 class InteractiveShell(cmd.Cmd):
 	"""
@@ -23,6 +24,9 @@ class InteractiveShell(cmd.Cmd):
 			pages = pages
 		)
 		print "Pages set!" if success else "Failed to set pages"
+	
+	def help_pages(self):
+		print "Link the pages to run. Syntax: pages <PAGENO><PAGENO><PAGENO> etc."
 	
 	def do_page(self, command):
 		cmdparts = command.split()
@@ -42,17 +46,59 @@ class InteractiveShell(cmd.Cmd):
 		)
 		print "Page sent!" if success else "Failed to send page"
 	
+	def help_page(self):
+		print "Send a message to the sign. Syntax: page <PAGENO> <MESSAGE>"
+	
 	def do_p(self, command):
 		# p = page a
 		return self.do_page("A %s" % command)
+	
+	def help_p(self):
+		print "Shortcut for page A"
 	
 	def do_pn(self, command):
 		# pn = page a, narrow
 		return self.do_page("A [font=narrow]%s" % command)
 	
+	def help_pn(self):
+		print "Shortcut for page A [font=narrow]"
+	
 	def do_pb(self, command):
 		# pb = page a, bold
 		return self.do_page("A [font=bold]%s" % command)
+	
+	def help_pb(self):
+		print "Shortcut for page A [font=bold]"
+	
+	def do_lead(self, lead):
+		self.settings['lead'] = getattr(self.sign, "EFFECT_%s" % lead.upper())
+	
+	def help_lead(self):
+		print "Set the leading effect. Can be immediate, xopen, curtain_up, curtain_down, scroll_left, scroll_right, vopen, vclose, scroll_up, scroll_down, hold, snow, twinkle, block_move, random, hello_world, welcome or amplus."
+	
+	def do_lag(self, lag):
+		self.settings['lag'] = getattr(self.sign, "EFFECT_%s" % lag.upper())
+	
+	def help_lag(self):
+		print "Set the lagging effect. Can be immediate, xopen, curtain_up, curtain_down, scroll_left, scroll_right, vopen, vclose, scroll_up, scroll_down or hold."
+	
+	def do_wait(self, duration):
+		self.settings['wait'] = float(duration)
+	
+	def help_wait(self):
+		print "Set the waiting time. Value between 0.5 and 25 seconds."
+	
+	def do_method(self, method):
+		self.settings['method'] = getattr(self.sign, "METHOD_%s" % method.upper())
+	
+	def help_method(self):
+		print "Set the display effect. Can be normal, blinking, song_1, song_2 or song_3."
+	
+	def do_speed(self, speed):
+		self.settings['speed'] = getattr(self.sign, "SPEED_%s" % speed.upper())
+	
+	def help_speed(self):
+		print "Set the effect speed. Can be fast, medium, slow or slowest."
 
 def main():
 	parser = argparse.ArgumentParser(description = "Interactive AM03127 LED sign shell")
@@ -117,7 +163,13 @@ def main():
 	shell.sign = sign
 	shell.settings = settings
 	try:
-		shell.cmdloop()
+		while True:
+			try:
+				shell.cmdloop()
+			except KeyboardInterrupt:
+				raise
+			except:
+				traceback.print_exc()
 	except KeyboardInterrupt:
 		print
 
