@@ -2,7 +2,7 @@
 # See the LICENSE file for the full license.
 
 name = "pyLEDSign"
-version = "2.0.1"
+version = "2.0.2"
 description = "A LED message board library for Python"
 license = "AGPLv3"
 author = "Julian Metzler"
