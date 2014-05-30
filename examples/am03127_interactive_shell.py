@@ -9,7 +9,10 @@ EXAMPLE SCRIPT: Interactive shell for AM03127-based LED signs
 import argparse
 import cmd
 import ledsign
+import os
 import traceback
+
+from serial import SerialException
 
 class InteractiveShell(cmd.Cmd):
 	"""
@@ -35,15 +38,43 @@ class InteractiveShell(cmd.Cmd):
 		
 		content = ledsign.am03127.PageContentBBCodeParser().render(text)
 		
-		success = self.sign.send_page(
-			page = page,
-			lead = self.settings['lead'],
-			speed = self.settings['speed'],
-			method = self.settings['method'],
-			wait = self.settings['wait'],
-			lag = self.settings['lag'],
-			content = content
-		)
+		try:
+			success = self.sign.send_page(
+				page = page,
+				lead = self.settings['lead'],
+				speed = self.settings['speed'],
+				method = self.settings['method'],
+				wait = self.settings['wait'],
+				lag = self.settings['lag'],
+				content = content
+			)
+		except SerialException:
+			# Probably just an I/O Error, try with a different device name
+			
+			try:
+				device = _get_device_name()
+			except Exception as e:
+				print e
+				success = False
+			else:
+				print "Device error, trying %s" % device
+				self.sign = ledsign.am03127.LEDSign(
+					port = device,
+					baudrate = self.sign.baudrate,
+					timeout = self.sign.timeout,
+					id = self.sign.id
+				)
+				
+				success = self.sign.send_page(
+					page = page,
+					lead = self.settings['lead'],
+					speed = self.settings['speed'],
+					method = self.settings['method'],
+					wait = self.settings['wait'],
+					lag = self.settings['lag'],
+					content = content
+				)
+		
 		print "Page sent!" if success else "Failed to send page"
 	
 	def help_page(self):
@@ -100,11 +131,21 @@ class InteractiveShell(cmd.Cmd):
 	def help_speed(self):
 		print "Set the effect speed. Can be fast, medium, slow or slowest."
 
+def _get_device_name():
+	# Look for USB to RS232 converters (rather dirty and specific solution)
+	
+	devices = os.listdir("/dev")
+	candidates = [device for device in devices if device.startswith("ttyUSB")]
+	if len(candidates) == 0:
+		raise Exception("No serial devices found.")
+	return "/dev/" + candidates[0]
+
 def main():
 	parser = argparse.ArgumentParser(description = "Interactive AM03127 LED sign shell")
-	parser.add_argument('-d', '--device',
+	
+	"""parser.add_argument('-d', '--device',
 		default = "/dev/ttyUSB0",
-		help = "Serial device to use")
+		help = "Serial device to use")"""
 	
 	parser.add_argument('-b', '--baudrate',
 		type = int,
@@ -144,8 +185,10 @@ def main():
 	
 	args = parser.parse_args()
 	
+	device = _get_device_name()
+	
 	sign = ledsign.am03127.LEDSign(
-		port = args.device,
+		port = device,
 		baudrate = args.baudrate,
 		timeout = None,
 		id = args.id
@@ -162,6 +205,7 @@ def main():
 	shell = InteractiveShell()
 	shell.sign = sign
 	shell.settings = settings
+	
 	try:
 		while True:
 			try:

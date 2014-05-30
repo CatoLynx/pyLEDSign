@@ -92,6 +92,9 @@ class LEDSign(object):
 	
 	def __init__(self, port = None, baudrate = 9600, timeout = None, id = 1):
 		self.id = id
+		self.port = port
+		self.baudrate = baudrate
+		self.timeout = timeout
 		self.comm = SerialCommunicator(
 			port = port,
 			baudrate = baudrate,
