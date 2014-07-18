@@ -97,12 +97,6 @@ def main():
 		timeout = None,
 		id = args.id
 	)
-	
-	# Set the pages to run
-	sign.send_schedule(
-		schedule = "A",
-		pages = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"[:args.count]
-	)
 
 	settings = {
 		'speed': getattr(sign, "SPEED_%s" % args.speed.upper()),
@@ -148,6 +142,13 @@ def main():
 						results.append(status)
 			
 			results = results[:args.count]
+			
+			print "ABCDEFGHIJKLMNOPQRSTUVWXYZ"[:len(results)]
+			# Set the pages to run
+			sign.send_schedule(
+				schedule = "A",
+				pages = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"[:len(results)]
+			)
 			
 			for index, status in enumerate(results):
 				text = re.sub(r"(#.+?)(?=\s|$)", "[color=green]\\1[color=orange]", status.clean_text().replace("\n", " ")) # Color hashtags green
