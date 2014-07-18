@@ -58,10 +58,15 @@ def main():
 		default = 'scroll_down',
 		help = "Lagging effect")
 	
-	parser.add_argument('-f', '--token-file',
+	parser.add_argument('-tf', '--token-file',
 		type = str,
 		default = "twitter_tokens.json",
 		help = "A JSON file containing the Twitter API tokens (see source code for key names)")
+	
+	parser.add_argument('-bf', '--blacklist-file',
+		type = str,
+		default = "twitter_blacklist.json",
+		help = "A JSON file containing the blacklisted stuff (see source code for key names)")
 	
 	parser.add_argument('-k', '--keywords',
 		type = str,
@@ -80,15 +85,23 @@ def main():
 	
 	args = parser.parse_args()
 	
-	#with open("/home/mezgrman/projects/pyLEDSign/examples/twitter_tokens.json", 'r') as f:
 	with open(args.token_file, 'r') as f:
 		keys = json.load(f)
+	
+	with open(args.blacklist_file, 'r') as f:
+		blacklist = json.load(f)
 	
 	sign = ledsign.am03127.LEDSign(
 		port = args.device,
 		baudrate = args.baudrate,
 		timeout = None,
 		id = args.id
+	)
+	
+	# Set the pages to run
+	sign.send_schedule(
+		schedule = "A",
+		pages = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"[:args.count]
 	)
 
 	settings = {
@@ -113,9 +126,26 @@ def main():
 			
 			results = []
 			for index, status in enumerate(raw_results):
-				# Ignore replies and retweets
+				# Ignore replies and retweets and apply the blacklists
 				if not (status.text.startswith("@") or hasattr(status, 'retweeted_status') or "RT @" in status.text):
-					results.append(status)
+					filtered = False
+					for word in blacklist['words']:
+						if word.lower() in status.clean_text().lower():
+							filtered = True
+							break
+					
+					for client in blacklist['clients']:
+						if status.source.lower() == client.lower():
+							filtered = True
+							break
+					
+					for user in blacklist['users']:
+						if status.user.screen_name.lower() == user.lower():
+							filtered = True
+							break
+					
+					if not filtered:
+						results.append(status)
 			
 			results = results[:args.count]
 			

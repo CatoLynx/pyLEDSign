@@ -3,3 +3,4 @@ pyLEDSign.egg-info/
 build/
 dist/
 examples/twitter_tokens.json
+examples/twitter_blacklist.json

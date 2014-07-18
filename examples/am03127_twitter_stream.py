@@ -61,10 +61,15 @@ def main():
 		default = 'scroll_down',
 		help = "Lagging effect")
 	
-	parser.add_argument('-f', '--token-file',
+	parser.add_argument('-tf', '--token-file',
 		type = str,
 		default = "twitter_tokens.json",
 		help = "A JSON file containing the Twitter API tokens (see source code for key names)")
+	
+	parser.add_argument('-bf', '--blacklist-file',
+		type = str,
+		default = "twitter_blacklist.json",
+		help = "A JSON file containing the blacklisted stuff (see source code for key names)")
 	
 	parser.add_argument('-k', '--keywords',
 		type = str,
@@ -76,11 +81,20 @@ def main():
 	with open(args.token_file, 'r') as f:
 		keys = json.load(f)
 	
+	with open(args.blacklist_file, 'r') as f:
+		blacklist = json.load(f)
+	
 	sign = ledsign.am03127.LEDSign(
 		port = args.device,
 		baudrate = args.baudrate,
 		timeout = None,
 		id = args.id
+	)
+	
+	# Set the page to run
+	sign.send_schedule(
+		schedule = "A",
+		pages = args.page
 	)
 
 	settings = {
@@ -95,9 +109,21 @@ def main():
 	
 	class LEDSignStreamProcessor(tweetpony.StreamProcessor):
 		def on_status(self, status):
-			# Ignore replies and retweets
+			# Ignore replies and retweets and apply the blacklists
 			if status.text.startswith("@") or hasattr(status, 'retweeted_status') or "RT @" in status.text:
 				return True
+			
+			for word in blacklist['words']:
+				if word.lower() in status.clean_text().lower():
+					return True
+			
+			for client in blacklist['clients']:
+				if status.source.lower() == client.lower():
+					return True
+			
+			for user in blacklist['users']:
+				if status.user.screen_name.lower() == user.lower():
+					return True
 			
 			text = re.sub(r"(#.+?)(?=\s|$)", "[color=green]\\1[color=orange]", status.clean_text().replace("\n", " ")) # Color hashtags green
 			content = message_parser.render("[color=red]@%s: [color=orange]%s" % (status.user.screen_name, text)).render()
