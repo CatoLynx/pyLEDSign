@@ -126,6 +126,7 @@ def main():
 					return True
 			
 			text = re.sub(r"(#.+?)(?=\s|$)", "[color=green]\\1[color=orange]", status.clean_text().replace("\n", " ")) # Color hashtags green
+			text = re.sub(r"(@.+?)(?=\s|$)", "[color=red]\\1[color=orange]", text) # Color user mentions red
 			content = message_parser.render("[color=red]@%s: [color=orange]%s" % (status.user.screen_name, text)).render()
 			
 			success = sign.send_page(
