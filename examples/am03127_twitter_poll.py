@@ -1,0 +1,145 @@
+#!/usr/bin/env python
+# Copyright (C) 2014 Julian Metzler
+# See the LICENSE file for the full license.
+
+"""
+EXAMPLE SCRIPT: Periodically poll tweets and send them to the LED sign
+Requires the TweetPony library, which can be installed with pip, or found at https://github.com/Mezgrman/TweetPony
+"""
+
+import argparse
+import datetime
+import json
+import ledsign
+import re
+import time
+import tweetpony
+
+def main():
+	parser = argparse.ArgumentParser(description = "Tweet polling for AM03127 LED sign")
+	
+	parser.add_argument('-d', '--device',
+		default = "/dev/ttyUSB0",
+		help = "Serial device to use")
+	
+	parser.add_argument('-b', '--baudrate',
+		type = int,
+		choices = (1200, 2400, 4800, 9600, 19200),
+		default = 9600,
+		help = "Baudrate for the serial port")
+	
+	parser.add_argument('-i', '--id',
+		type = int,
+		default = 1,
+		help = "ID of the LED sign")
+	
+	parser.add_argument('-s', '--speed',
+		choices = ('slowest', 'slow', 'medium', 'fast'),
+		default = 'fast',
+		help = "Effect speed")
+	
+	parser.add_argument('-m', '--method',
+		choices = ('normal', 'blinking', 'song_1', 'song_2', 'song_3'),
+		default = 'normal',
+		help = "Display effect while waiting")
+	
+	parser.add_argument('-w', '--wait',
+		type = float,
+		default = 2.0,
+		help = "Time to show the text until it disappears")
+	
+	parser.add_argument('-lead', '--lead',
+		choices = ('immediate', 'xopen', 'curtain_up', 'curtain_down', 'scroll_left', 'scroll_right', 'vopen', 'vclose', 'scroll_up', 'scroll_down', 'hold', 'snow', 'twinkle', 'block_move', 'random', 'hello_world', 'welcome', 'amplus'),
+		default = 'scroll_left',
+		help = "Leading effect")
+	
+	parser.add_argument('-lag', '--lag',
+		choices = ('immediate', 'xopen', 'curtain_up', 'curtain_down', 'scroll_left', 'scroll_right', 'vopen', 'vclose', 'scroll_up', 'scroll_down', 'hold'),
+		default = 'scroll_down',
+		help = "Lagging effect")
+	
+	parser.add_argument('-f', '--token-file',
+		type = str,
+		default = "twitter_tokens.json",
+		help = "A JSON file containing the Twitter API tokens (see source code for key names)")
+	
+	parser.add_argument('-k', '--keywords',
+		type = str,
+		required = True,
+		help = "A comma-separated list of tweet keywords to poll")
+	
+	parser.add_argument('-pi', '--polling-interval',
+		type = int,
+		default = 5,
+		help = "The pause between requests to Twitter, in minutes")
+	
+	parser.add_argument('-c', '--count',
+		type = int,
+		default = 26,
+		help = "How many tweets to send to the sign")
+	
+	args = parser.parse_args()
+	
+	#with open("/home/mezgrman/projects/pyLEDSign/examples/twitter_tokens.json", 'r') as f:
+	with open(args.token_file, 'r') as f:
+		keys = json.load(f)
+	
+	sign = ledsign.am03127.LEDSign(
+		port = args.device,
+		baudrate = args.baudrate,
+		timeout = None,
+		id = args.id
+	)
+
+	settings = {
+		'speed': getattr(sign, "SPEED_%s" % args.speed.upper()),
+		'method': getattr(sign, "METHOD_%s" % args.method.upper()),
+		'wait': args.wait,
+		'lead': getattr(sign, "EFFECT_%s" % args.lead.upper()),
+		'lag': getattr(sign, "EFFECT_%s" % args.lag.upper())
+	}
+	
+	message_parser = ledsign.am03127.parsers.PageContentBBCodeParser()
+	
+	api = tweetpony.API(keys['consumer_key'], keys['consumer_secret'], keys['access_token'], keys['access_token_secret'])
+	
+	try:
+		while True:
+			raw_results = []
+			for keyword in args.keywords.split(","):
+				raw_results += [tweet for tweet in api.search_tweets(q = keyword, result_type = 'recent', count = 30)]
+			
+			raw_results.sort(key = lambda tweet:tweet.created_at, reverse = True)
+			
+			results = []
+			for index, status in enumerate(raw_results):
+				# Ignore replies and retweets
+				if not (status.text.startswith("@") or hasattr(status, 'retweeted_status') or "RT @" in status.text):
+					results.append(status)
+			
+			results = results[:args.count]
+			
+			for index, status in enumerate(results):
+				text = re.sub(r"(#.+?)(?=\s|$)", "[color=green]\\1[color=orange]", status.clean_text().replace("\n", " ")) # Color hashtags green
+				content = message_parser.render("[color=red]@%s: [color=orange]%s" % (status.user.screen_name, text)).render()
+				
+				success = sign.send_page(
+					page = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"[index],
+					lead = settings['lead'],
+					speed = settings['speed'],
+					method = settings['method'],
+					wait = settings['wait'],
+					lag = settings['lag'],
+					content = content.encode('utf-8')
+				)
+				success_str = " OK " if success else "FAIL"
+				
+				print "[%s] %s %s" % (success_str, status.user.screen_name.ljust(15), status.clean_text().replace("\n", " "))
+			
+			print "Next poll at %s\n" % (datetime.datetime.now() + datetime.timedelta(seconds = args.polling_interval * 60)).strftime("%H:%M:%S")
+			time.sleep(args.polling_interval * 60)
+	except KeyboardInterrupt:
+		pass
+
+if __name__ == "__main__":
+	main()
