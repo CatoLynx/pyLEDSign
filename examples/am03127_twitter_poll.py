@@ -143,7 +143,6 @@ def main():
 			
 			results = results[:args.count]
 			
-			print "ABCDEFGHIJKLMNOPQRSTUVWXYZ"[:len(results)]
 			# Set the pages to run
 			sign.send_schedule(
 				schedule = "A",
