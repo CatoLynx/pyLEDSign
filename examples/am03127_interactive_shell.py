@@ -35,6 +35,7 @@ class InteractiveShell(cmd.Cmd):
 		cmdparts = command.split()
 		page = cmdparts[0]
 		text = " ".join(cmdparts[1:])
+		text = "".join([chr(ord(char)) for char in text.decode('utf-8')]) # Turn the text into 8-bit ASCII instead of UTF-8 encoded 7-bit ASCII
 		
 		content = ledsign.am03127.PageContentBBCodeParser().render(text)
 		
@@ -130,6 +131,12 @@ class InteractiveShell(cmd.Cmd):
 	
 	def help_speed(self):
 		print "Set the effect speed. Can be fast, medium, slow or slowest."
+	
+	def do_brightness(self, brightness):
+		self.sign.set_brightness(float(brightness))
+	
+	def help_brightness(self):
+		print "Set the LED brightness. Can be any value between 0.0 and 1.0."
 
 def _get_device_name():
 	# Look for USB to RS232 converters (rather dirty and specific solution)

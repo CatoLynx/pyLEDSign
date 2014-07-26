@@ -151,8 +151,10 @@ def main():
 			
 			for index, status in enumerate(results):
 				text = re.sub(r"(#.+?)(?=\s|$)", "[color=green]\\1[color=orange]", status.clean_text().replace("\n", " ")) # Color hashtags green
-				text = re.sub(r"(@.+?)(?=\s|$)", "[color=red]\\1[color=orange]", text) # Color user mentions red
+				text = re.sub(r"(@\S+?)(?=\s|$)", "[color=red]\\1[color=orange]", text) # Color user mentions red
+				text = re.sub(r"https{0,1}://[a-zA-Z0-9./]+", "[font=narrow][link][font=normal]", text) # Replace URLs with a placeholder
 				content = message_parser.render("[color=red]@%s: [color=orange]%s" % (status.user.screen_name, text)).render()
+				content = "".join([chr(ord(char)) for char in content]) # Turn the text into 8-bit ASCII instead of UTF-8 encoded 7-bit ASCII
 				
 				success = sign.send_page(
 					page = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"[index],
@@ -161,8 +163,20 @@ def main():
 					method = settings['method'],
 					wait = settings['wait'],
 					lag = settings['lag'],
-					content = content.encode('utf-8')
+					content = content
 				)
+				
+				if not success:
+					success = sign.send_page(
+						page = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"[index],
+						lead = settings['lead'],
+						speed = settings['speed'],
+						method = settings['method'],
+						wait = settings['wait'],
+						lag = settings['lag'],
+						content = content
+					)
+				
 				success_str = " OK " if success else "FAIL"
 				
 				print "[%s] %s %s" % (success_str, status.user.screen_name.ljust(15), status.clean_text().replace("\n", " "))
