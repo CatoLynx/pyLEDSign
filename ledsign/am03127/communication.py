@@ -163,7 +163,7 @@ class LEDSign(object):
 			timedata = datetime.datetime.now()
 		
 		msg = SetClockMessage(
-			year = timedata.strftime("%y"),
+			year = int(timedata.strftime("%y")),
 			weekday = timedata.isoweekday(),
 			month = timedata.month,
 			day = timedata.day,
